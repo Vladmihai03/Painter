@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Program de Desenare</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <header class="header">
+        <h1>🎨 Program de Desenare Modern</h1>
+    </header>
+
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <label for="shape">Alege figura:</label>
+            <select id="shape">
+                <option value="pen">Pen</option>
+                <option value="ellipse">Elipsă</option>
+                <option value="rectangle">Dreptunghi</option>
+                <option value="line">Linie</option>
+            </select>
+        </div>
+
+        <div class="toolbar-group">
+            <label for="color">Culoare:</label>
+            <input type="color" id="color" value="#000000">
+        </div>
+
+        <div class="toolbar-group">
+            <label for="lineWidth">Grosime linie:</label>
+            <input type="text" id="lineWidth" placeholder="maxim 10">
+        </div>
+
+        <div class="toolbar-group">
+            <label for="backgroundColor">Culoare fundal:</label>
+            <input type="color" id="backgroundColor" value="#ffffff">
+        </div>
+
+        <button id="clearCanvas" class="btn">🧹 Șterge tot</button>
+        <button id="eraseMode" class="btn">✏️ Eraser</button>
+        <button id="exportPng" class="btn">📂 Export PNG</button>
+        <button id="exportSvg" class="btn">📂 Export SVG</button>
+    </div>
+
+    <canvas id="drawingCanvas" width="800" height="600"></canvas>
+
+    <div class="figure-list">
+        <h3>Lista figurilor:</h3>
+        <ul id="figureList"></ul>
+    </div>
+
+    <div id="editFigure" class="edit-form">
+        <h3>✏️ Editare Figură</h3>
+        <p class="info">* Valoarea maximă pentru fiecare câmp este 500.</p>
+        <div class="form-row">
+            <label for="editX">Poziție X:</label>
+            <input type="text" id="editX" placeholder="Introduceți o valoare">
+        </div>
+        <div class="form-row">
+            <label for="editY">Poziție Y:</label>
+            <input type="text" id="editY" placeholder="Introduceți o valoare">
+        </div>
+        <div class="form-row">
+            <label for="editWidth">Lățime:</label>
+            <input type="text" id="editWidth" placeholder="Introduceți o valoare">
+        </div>
+        <div class="form-row">
+            <label for="editHeight">Înălțime:</label>
+            <input type="text" id="editHeight" placeholder="Introduceți o valoare">
+        </div>
+        <button id="saveFigure" class="button-save">💾 Salvează</button>
+        <button id="cancelEdit" class="button-cancel">❌ Anulează</button>
+    </div>
+
+    <footer class="footer">
+        <p>💡 Proiect realizat cu pasiune pentru creativitate.</p>
+    </footer>
+
+    <script src="index.js"></script>
+</body>
+</html>
