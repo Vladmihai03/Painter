@@ -13,16 +13,13 @@ const editFigureForm = document.getElementById("editFigure");
 
 let isDrawing = false;
 let eraseMode = false;
-let startX = 0;
-let startY = 0;
+let startX = 0, startY = 0;
 let figures = [];
-let currentPenPath = [];
+let penPath = [];
 
 editFigureForm.style.display = "none";
 
-backgroundColorPicker.addEventListener("input", () => {
-    redrawCanvas();
-});
+backgroundColorPicker.addEventListener("input", redrawCanvas);
 
 shapeSelector.addEventListener("change", () => {
     if (eraseMode) deactivateEraser();
@@ -31,33 +28,27 @@ shapeSelector.addEventListener("change", () => {
 function redrawCanvas() {
     ctx.fillStyle = backgroundColorPicker.value;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    figures.forEach((figure) => {
-        ctx.beginPath();
-        ctx.strokeStyle = figure.color;
-        ctx.lineWidth = figure.lineWidth;
-        if (figure.shape === "ellipse") {
-            ctx.ellipse(
-                figure.x + figure.width / 2,
-                figure.y + figure.height / 2,
-                Math.abs(figure.width / 2),
-                Math.abs(figure.height / 2),
-                0,
-                0,
-                2 * Math.PI
-            );
-        } else if (figure.shape === "rectangle") {
-            ctx.rect(figure.x, figure.y, figure.width, figure.height);
-        } else if (figure.shape === "line") {
-            ctx.moveTo(figure.x, figure.y);
-            ctx.lineTo(figure.x + figure.width, figure.y + figure.height);
-        } else if (figure.shape === "pen") {
-            for (let i = 1; i < figure.path.length; i++) {
-                ctx.moveTo(figure.path[i - 1].x, figure.path[i - 1].y);
-                ctx.lineTo(figure.path[i].x, figure.path[i].y);
-            }
+    figures.forEach(drawFigure);
+}
+
+function drawFigure(figure) {
+    ctx.beginPath();
+    ctx.strokeStyle = figure.color;
+    ctx.lineWidth = figure.lineWidth;
+    if (figure.shape === "ellipse") {
+        ctx.ellipse(figure.x + figure.width / 2, figure.y + figure.height / 2, Math.abs(figure.width / 2), Math.abs(figure.height / 2), 0, 0, 2 * Math.PI);
+    } else if (figure.shape === "rectangle") {
+        ctx.rect(figure.x, figure.y, figure.width, figure.height);
+    } else if (figure.shape === "line") {
+        ctx.moveTo(figure.x, figure.y);
+        ctx.lineTo(figure.x + figure.width, figure.y + figure.height);
+    } else if (figure.shape === "pen") {
+        for (let i = 1; i < figure.path.length; i++) {
+            ctx.moveTo(figure.path[i - 1].x, figure.path[i - 1].y);
+            ctx.lineTo(figure.path[i].x, figure.path[i].y);
         }
-        ctx.stroke();
-    });
+    }
+    ctx.stroke();
 }
 
 function selectFigureForEdit(index) {
@@ -81,28 +72,16 @@ function saveFigureChanges(index) {
     const y = parseInt(document.getElementById("editY").value, 10);
     const width = parseInt(document.getElementById("editWidth").value, 10);
     const height = parseInt(document.getElementById("editHeight").value, 10);
-
-    if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height) || x < 0 || y < 0 || width < 0 || height < 0) {
-        alert("Introduceți valori valide pentru coordonate și dimensiuni.");
+    if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height) || x < 0 || y < 0 || width < 0 || height < 0 || width > 500 || height > 500 || x + width > canvas.width || y + height > canvas.height) {
+        alert("Invalid input.");
         return;
     }
-    if (x + width > canvas.width || y + height > canvas.height) {
-        alert("Figura nu poate depăși dimensiunile canvasului.");
-        return;
-    }
-    if (width > 500 || height > 500) {
-        alert("Lățimea și înălțimea trebuie să fie mai mici de 500.");
-        return;
-    }
-
     figure.x = x;
     figure.y = y;
     figure.width = width;
     figure.height = height;
-
     editFigureForm.style.display = "none";
     toggleEditMode(false);
-
     redrawCanvas();
     updateFigureList();
 }
@@ -126,26 +105,14 @@ function deactivateEraser() {
 }
 
 function toggleEditMode(isEditing) {
-    const controls = [
-        clearCanvasButton,
-        exportPngButton,
-        exportSvgButton,
-        shapeSelector,
-        backgroundColorPicker,
-        colorPicker,
-        lineWidthPicker,
-        eraseModeButton,
-    ];
-    controls.forEach((control) => {
-        control.disabled = isEditing;
-    });
+    const controls = [clearCanvasButton, exportPngButton, exportSvgButton, shapeSelector, backgroundColorPicker, colorPicker, lineWidthPicker, eraseModeButton];
+    controls.forEach((control) => { control.disabled = isEditing; });
 }
 
 canvas.addEventListener("mousedown", (e) => {
     const rect = canvas.getBoundingClientRect();
     startX = e.clientX - rect.left;
     startY = e.clientY - rect.top;
-
     if (eraseMode) {
         let index;
         do {
@@ -154,45 +121,33 @@ canvas.addEventListener("mousedown", (e) => {
         } while (index !== -1);
         return;
     }
-
     isDrawing = true;
-
     if (shapeSelector.value === "pen") {
-        currentPenPath = [{ x: startX, y: startY }];
+        penPath = [{ x: startX, y: startY }];
     } else {
         const lineWidth = parseInt(lineWidthPicker.value, 10) || 1;
         if (lineWidth > 10) {
-            alert("Grosimea liniei nu poate fi mai mare de 10.");
+            alert("Line width cannot exceed 10.");
             return;
         }
-        figures.push({
-            shape: shapeSelector.value,
-            color: colorPicker.value,
-            lineWidth: lineWidth,
-            x: startX,
-            y: startY,
-            width: 0,
-            height: 0,
-        });
+        figures.push({ shape: shapeSelector.value, color: colorPicker.value, lineWidth: lineWidth, x: startX, y: startY, width: 0, height: 0 });
     }
 });
 
 canvas.addEventListener("mousemove", (e) => {
     if (!isDrawing || eraseMode) return;
-
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
     if (shapeSelector.value === "pen") {
-        currentPenPath.push({ x, y });
+        penPath.push({ x, y });
         ctx.beginPath();
-        ctx.moveTo(currentPenPath[currentPenPath.length - 2].x, currentPenPath[currentPenPath.length - 2].y);
+        ctx.moveTo(penPath[penPath.length - 2].x, penPath[penPath.length - 2].y);
         ctx.lineTo(x, y);
         ctx.strokeStyle = colorPicker.value;
         const lineWidth = parseInt(lineWidthPicker.value, 10) || 1;
         if (lineWidth > 10) {
-            alert("Grosimea liniei nu poate fi mai mare de 10.");
+            alert("Line width cannot exceed 10.");
             return;
         }
         ctx.lineWidth = lineWidth;
@@ -209,13 +164,8 @@ canvas.addEventListener("mouseup", () => {
     if (!isDrawing || eraseMode) return;
     isDrawing = false;
     if (shapeSelector.value === "pen") {
-        figures.push({
-            shape: "pen",
-            color: colorPicker.value,
-            lineWidth: parseInt(lineWidthPicker.value, 10) || 1,
-            path: [...currentPenPath],
-        });
-        currentPenPath = [];
+        figures.push({ shape: "pen", color: colorPicker.value, lineWidth: parseInt(lineWidthPicker.value, 10) || 1, path: [...penPath] });
+        penPath = [];
     }
     updateFigureList();
 });
@@ -224,16 +174,8 @@ function updateFigureList() {
     figureList.innerHTML = "";
     figures.forEach((figure, index) => {
         if (figure.shape === "pen") return;
-
-        const x = figure.x ?? 0;
-        const y = figure.y ?? 0;
-
         const li = document.createElement("li");
-        li.innerHTML = `
-            ${figure.shape} (${x.toFixed(1)}, ${y.toFixed(1)})
-            <button class="edit-button" onclick="selectFigureForEdit(${index})">Editează</button>
-            <button class="delete-button" onclick="deleteFigure(${index})">Șterge</button>
-        `;
+        li.innerHTML = `${figure.shape} (${figure.x}, ${figure.y}) <button onclick="selectFigureForEdit(${index})">Edit</button> <button onclick="deleteFigure(${index})">Delete</button>`;
         figureList.appendChild(li);
     });
 }
@@ -246,9 +188,7 @@ exportPngButton.addEventListener("click", () => {
 });
 
 exportSvgButton.addEventListener("click", () => {
-    let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">`;
-    svgContent += `<rect width="100%" height="100%" fill="${backgroundColorPicker.value}" />`;
-
+    let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}"><rect width="100%" height="100%" fill="${backgroundColorPicker.value}" />`;
     figures.forEach((figure) => {
         if (figure.shape === "ellipse") {
             svgContent += `<ellipse cx="${figure.x + figure.width / 2}" cy="${figure.y + figure.height / 2}" rx="${Math.abs(figure.width / 2)}" ry="${Math.abs(figure.height / 2)}" stroke="${figure.color}" stroke-width="${figure.lineWidth}" fill="none" />`;
@@ -257,10 +197,9 @@ exportSvgButton.addEventListener("click", () => {
         } else if (figure.shape === "line") {
             svgContent += `<line x1="${figure.x}" y1="${figure.y}" x2="${figure.x + figure.width}" y2="${figure.y + figure.height}" stroke="${figure.color}" stroke-width="${figure.lineWidth}" />`;
         } else if (figure.shape === "pen") {
-            svgContent += `<polyline points="${figure.path.map((point) => `${point.x},${point.y}`).join(" ")}" stroke="${figure.color}" stroke-width="${figure.lineWidth}" fill="none" />`;
+            svgContent += `<polyline points="${figure.path.map((p) => `${p.x},${p.y}`).join(" ")}" stroke="${figure.color}" stroke-width="${figure.lineWidth}" fill="none" />`;
         }
     });
-
     svgContent += "</svg>";
     const blob = new Blob([svgContent], { type: "image/svg+xml" });
     const link = document.createElement("a");
@@ -285,14 +224,11 @@ function isPointInFigure(x, y, figure) {
     } else if (figure.shape === "rectangle") {
         return x >= figure.x && x <= figure.x + figure.width && y >= figure.y && y <= figure.y + figure.height;
     } else if (figure.shape === "line") {
-        const dx = figure.width;
-        const dy = figure.height;
-        const length = Math.sqrt(dx ** 2 + dy ** 2);
+        const dx = figure.width, dy = figure.height, length = Math.sqrt(dx ** 2 + dy ** 2);
         const dot = ((x - figure.x) * dx + (y - figure.y) * dy) / (length ** 2);
         const closestX = figure.x + dot * dx;
         const closestY = figure.y + dot * dy;
-        const distance = Math.sqrt((x - closestX) ** 2 + (y - closestY) ** 2);
-        return distance <= figure.lineWidth / 2;
+        return Math.sqrt((x - closestX) ** 2 + (y - closestY) ** 2) <= figure.lineWidth / 2;
     } else if (figure.shape === "pen") {
         return figure.path.some((point) => Math.hypot(point.x - x, point.y - y) <= figure.lineWidth);
     }
