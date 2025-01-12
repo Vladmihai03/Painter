@@ -18,31 +18,23 @@ let startY = 0;
 let figures = [];
 let currentPenPath = [];
 
-// Ascunde formularul implicit
 editFigureForm.style.display = "none";
 
-// Schimbă fundalul oricând este selectată o nouă culoare
 backgroundColorPicker.addEventListener("input", () => {
     redrawCanvas();
 });
 
-// Dezactivează Eraser automat când selectezi o nouă figură
 shapeSelector.addEventListener("change", () => {
-    if (eraseMode) {
-        deactivateEraser();
-    }
+    if (eraseMode) deactivateEraser();
 });
 
-// Funcția de redesenare a canvas-ului
 function redrawCanvas() {
     ctx.fillStyle = backgroundColorPicker.value;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     figures.forEach((figure) => {
         ctx.beginPath();
         ctx.strokeStyle = figure.color;
         ctx.lineWidth = figure.lineWidth;
-
         if (figure.shape === "ellipse") {
             ctx.ellipse(
                 figure.x + figure.width / 2,
@@ -64,22 +56,18 @@ function redrawCanvas() {
                 ctx.lineTo(figure.path[i].x, figure.path[i].y);
             }
         }
-
         ctx.stroke();
     });
 }
 
-// Funcția pentru selectarea unei figuri pentru editare
 function selectFigureForEdit(index) {
     const figure = figures[index];
     document.getElementById("editX").value = figure.x;
     document.getElementById("editY").value = figure.y;
     document.getElementById("editWidth").value = figure.width;
     document.getElementById("editHeight").value = figure.height;
-
     editFigureForm.style.display = "block";
     toggleEditMode(true);
-
     document.getElementById("saveFigure").onclick = () => saveFigureChanges(index);
     document.getElementById("cancelEdit").onclick = () => {
         editFigureForm.style.display = "none";
@@ -87,7 +75,6 @@ function selectFigureForEdit(index) {
     };
 }
 
-// Funcția de salvare a modificărilor unei figuri
 function saveFigureChanges(index) {
     const figure = figures[index];
     const x = parseInt(document.getElementById("editX").value, 10);
@@ -95,11 +82,16 @@ function saveFigureChanges(index) {
     const width = parseInt(document.getElementById("editWidth").value, 10);
     const height = parseInt(document.getElementById("editHeight").value, 10);
 
-    if (
-        isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height) ||
-        x < 0 || y < 0 || width < 0 || height < 0
-    ) {
-        alert("Introduceți valori valide.");
+    if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height) || x < 0 || y < 0 || width < 0 || height < 0) {
+        alert("Introduceți valori valide pentru coordonate și dimensiuni.");
+        return;
+    }
+    if (x + width > canvas.width || y + height > canvas.height) {
+        alert("Figura nu poate depăși dimensiunile canvasului.");
+        return;
+    }
+    if (width > 500 || height > 500) {
+        alert("Lățimea și înălțimea trebuie să fie mai mici de 500.");
         return;
     }
 
@@ -115,28 +107,24 @@ function saveFigureChanges(index) {
     updateFigureList();
 }
 
-// Funcția pentru ștergerea unei figuri
 function deleteFigure(index) {
     figures.splice(index, 1);
     redrawCanvas();
     updateFigureList();
 }
 
-// Funcția de activare/dezactivare a modului Eraser
 eraseModeButton.addEventListener("click", () => {
     eraseMode = !eraseMode;
     eraseModeButton.textContent = eraseMode ? "Eraser (Active)" : "Eraser";
     eraseModeButton.classList.toggle("active", eraseMode);
 });
 
-// Dezactivează Eraser
 function deactivateEraser() {
     eraseMode = false;
     eraseModeButton.textContent = "Eraser";
     eraseModeButton.classList.remove("active");
 }
 
-// Reactivare controale
 function toggleEditMode(isEditing) {
     const controls = [
         clearCanvasButton,
@@ -148,13 +136,11 @@ function toggleEditMode(isEditing) {
         lineWidthPicker,
         eraseModeButton,
     ];
-
     controls.forEach((control) => {
         control.disabled = isEditing;
     });
 }
 
-// Evenimente pentru desenare și ștergere multiplă
 canvas.addEventListener("mousedown", (e) => {
     const rect = canvas.getBoundingClientRect();
     startX = e.clientX - rect.left;
@@ -164,10 +150,8 @@ canvas.addEventListener("mousedown", (e) => {
         let index;
         do {
             index = figures.findIndex((figure) => isPointInFigure(startX, startY, figure));
-            if (index !== -1) {
-                deleteFigure(index);
-            }
-        } while (index !== -1); // Ștergere multiplă în aceeași locație
+            if (index !== -1) deleteFigure(index);
+        } while (index !== -1);
         return;
     }
 
@@ -176,10 +160,15 @@ canvas.addEventListener("mousedown", (e) => {
     if (shapeSelector.value === "pen") {
         currentPenPath = [{ x: startX, y: startY }];
     } else {
+        const lineWidth = parseInt(lineWidthPicker.value, 10) || 1;
+        if (lineWidth > 10) {
+            alert("Grosimea liniei nu poate fi mai mare de 10.");
+            return;
+        }
         figures.push({
             shape: shapeSelector.value,
             color: colorPicker.value,
-            lineWidth: parseInt(lineWidthPicker.value, 10) || 1,
+            lineWidth: lineWidth,
             x: startX,
             y: startY,
             width: 0,
@@ -201,7 +190,12 @@ canvas.addEventListener("mousemove", (e) => {
         ctx.moveTo(currentPenPath[currentPenPath.length - 2].x, currentPenPath[currentPenPath.length - 2].y);
         ctx.lineTo(x, y);
         ctx.strokeStyle = colorPicker.value;
-        ctx.lineWidth = parseInt(lineWidthPicker.value, 10) || 1;
+        const lineWidth = parseInt(lineWidthPicker.value, 10) || 1;
+        if (lineWidth > 10) {
+            alert("Grosimea liniei nu poate fi mai mare de 10.");
+            return;
+        }
+        ctx.lineWidth = lineWidth;
         ctx.stroke();
     } else {
         const figure = figures[figures.length - 1];
@@ -213,9 +207,7 @@ canvas.addEventListener("mousemove", (e) => {
 
 canvas.addEventListener("mouseup", () => {
     if (!isDrawing || eraseMode) return;
-
     isDrawing = false;
-
     if (shapeSelector.value === "pen") {
         figures.push({
             shape: "pen",
@@ -225,17 +217,20 @@ canvas.addEventListener("mouseup", () => {
         });
         currentPenPath = [];
     }
-
     updateFigureList();
 });
 
-// Actualizarea listei de figuri
 function updateFigureList() {
     figureList.innerHTML = "";
     figures.forEach((figure, index) => {
+        if (figure.shape === "pen") return;
+
+        const x = figure.x ?? 0;
+        const y = figure.y ?? 0;
+
         const li = document.createElement("li");
         li.innerHTML = `
-            ${figure.shape} (${figure.x.toFixed(1)}, ${figure.y.toFixed(1)})
+            ${figure.shape} (${x.toFixed(1)}, ${y.toFixed(1)})
             <button class="edit-button" onclick="selectFigureForEdit(${index})">Editează</button>
             <button class="delete-button" onclick="deleteFigure(${index})">Șterge</button>
         `;
@@ -243,7 +238,6 @@ function updateFigureList() {
     });
 }
 
-// Exportă PNG
 exportPngButton.addEventListener("click", () => {
     const link = document.createElement("a");
     link.download = "drawing.png";
@@ -251,7 +245,6 @@ exportPngButton.addEventListener("click", () => {
     link.click();
 });
 
-// Exportă SVG
 exportSvgButton.addEventListener("click", () => {
     let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">`;
     svgContent += `<rect width="100%" height="100%" fill="${backgroundColorPicker.value}" />`;
@@ -276,7 +269,12 @@ exportSvgButton.addEventListener("click", () => {
     link.click();
 });
 
-// Funcție pentru verificarea dacă un punct este într-o figură
+clearCanvasButton.addEventListener("click", () => {
+    figures = [];
+    redrawCanvas();
+    updateFigureList();
+});
+
 function isPointInFigure(x, y, figure) {
     if (figure.shape === "ellipse") {
         const centerX = figure.x + figure.width / 2;
